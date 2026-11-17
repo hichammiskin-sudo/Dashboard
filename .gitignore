@@ -1,0 +1,3 @@
+# Ne jamais versionner un dossier rempli ni ses impressions
+*.json
+*.pdf

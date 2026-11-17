@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dossier familial</title>
+<style>
+:root {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #f0ede6; --text: #1f1d1a; --muted: #6b665d;
+  --border: #ddd8cc; --accent: #2f5d50; --accent-soft: #e3eee9; --warn: #8a4b0f; --warn-soft: #fbf0e2;
+  --danger: #9b2c2c; --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161514; --surface: #201f1d; --surface-2: #2a2825; --text: #ece8e1; --muted: #a39d92;
+    --border: #3a3733; --accent: #7fbfa9; --accent-soft: #24332e; --warn: #e6a861; --warn-soft: #33281b; --danger: #e48b8b;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161514; --surface: #201f1d; --surface-2: #2a2825; --text: #ece8e1; --muted: #a39d92;
+  --border: #3a3733; --accent: #7fbfa9; --accent-soft: #24332e; --warn: #e6a861; --warn-soft: #33281b; --danger: #e48b8b;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+h1, h2, h3 { line-height: 1.25; font-weight: 650; }
+h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+h2 { font-size: 1.3rem; margin: 0 0 .5rem; }
+h3 { font-size: 1.05rem; margin: 1.25rem 0 .5rem; }
+p { margin: .4rem 0; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border: 1px solid var(--border); background: var(--surface); padding: .45rem .85rem; border-radius: 8px; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
+button.ghost { background: transparent; }
+button.small { padding: .2rem .55rem; font-size: .85rem; }
+button.danger { color: var(--danger); }
+input[type=text], input[type=password], input[type=date], select, textarea {
+  width: 100%; padding: .5rem .65rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+}
+textarea { min-height: 5.5rem; resize: vertical; }
+input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+label { display: block; font-size: .9rem; font-weight: 600; margin-bottom: .2rem; }
+.help { color: var(--muted); font-size: .85rem; margin: .1rem 0 .4rem; }
+
+/* Écran de verrouillage */
+#gate { max-width: 560px; margin: 8vh auto; padding: 0 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+.gate-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+.stack > * + * { margin-top: .8rem; }
+.error { color: var(--danger); font-size: .9rem; min-height: 1.2em; }
+.notice { background: var(--warn-soft); color: var(--text); border-left: 4px solid var(--warn); padding: .7rem .9rem; border-radius: 6px; font-size: .92rem; }
+.info { background: var(--accent-soft); border-left: 4px solid var(--accent); padding: .7rem .9rem; border-radius: 6px; font-size: .92rem; }
+
+/* Application */
+#app { display: none; }
+header.top { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--border); }
+.top-inner { max-width: 1200px; margin: 0 auto; padding: .6rem 16px; display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.top-inner .brand { font-weight: 700; margin-right: auto; }
+.mode-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.mode-switch button { border: 0; border-radius: 0; }
+.mode-switch button[aria-pressed=true] { background: var(--accent); color: var(--bg); }
+.save-state { font-size: .8rem; color: var(--muted); min-width: 7rem; text-align: right; }
+.layout { max-width: 1200px; margin: 0 auto; padding: 1rem 16px 4rem; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 1.5rem; }
+nav.side { position: sticky; top: 4.2rem; align-self: start; max-height: calc(100vh - 5rem); overflow: auto; }
+nav.side a { display: flex; justify-content: space-between; gap: .5rem; padding: .35rem .6rem; border-radius: 6px; text-decoration: none; color: var(--text); font-size: .92rem; }
+nav.side a:hover { background: var(--surface-2); }
+nav.side .count { color: var(--muted); font-size: .8rem; }
+#mobile-nav { display: none; margin-bottom: 1rem; }
+section.sec { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; scroll-margin-top: 4.5rem; }
+.sec-intro { color: var(--muted); margin-bottom: 1rem; }
+.field { margin-bottom: .9rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .6rem .9rem; }
+.list-item { border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px; padding: .8rem; margin-bottom: .6rem; }
+.list-item .item-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .4rem; font-size: .85rem; color: var(--muted); }
+.list-item .field { margin-bottom: .4rem; }
+.checklist { list-style: none; padding: 0; margin: 0; }
+.checklist li { display: flex; gap: .6rem; padding: .45rem 0; border-bottom: 1px dashed var(--border); }
+.checklist li:last-child { border-bottom: 0; }
+.checklist input { margin-top: .3rem; flex: none; width: 1.05rem; height: 1.05rem; accent-color: var(--accent); }
+.checklist .when { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--accent); margin-right: .35rem; }
+.checklist .done { color: var(--muted); text-decoration: line-through; }
+.tabs { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .8rem; }
+.tabs button[aria-selected=true] { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+/* Mode lecture */
+.read-field { margin-bottom: .7rem; }
+.read-field .k { font-size: .8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.read-field .v { white-space: pre-wrap; }
+.read-table { width: 100%; border-collapse: collapse; font-size: .93rem; margin-bottom: .8rem; display: block; overflow-x: auto; }
+.read-table th, .read-table td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--border); vertical-align: top; white-space: pre-wrap; }
+.read-table th { font-size: .78rem; text-transform: uppercase; color: var(--muted); letter-spacing: .03em; }
+.empty { color: var(--muted); font-style: italic; }
+.reflexe { border: 2px solid var(--accent); }
+.print-only { display: none; }
+
+@media (max-width: 820px) {
+  .layout { grid-template-columns: 1fr; }
+  nav.side { display: none; }
+  #mobile-nav { display: block; }
+  .save-state { display: none; }
+}
+@media print {
+  header.top, nav.side, #mobile-nav, .no-print, .gate-actions { display: none !important; }
+  body { background: #fff; color: #000; font-size: 11pt; }
+  .print-only { display: block !important; }
+  .screen-only { display: none !important; }
+  .layout { display: block; padding: 0; }
+  section.sec { border: 0; border-top: 1px solid #999; border-radius: 0; padding: .8rem 0 0; margin-bottom: 1rem; }
+  h2, h3 { break-after: avoid; }
+  tr, .read-field, .checklist li { break-inside: avoid; }
+  #s-protocoles { break-before: page; }
+  .read-table th, .read-table td { border-color: #999; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== Écran de verrouillage ===== -->
+<div id="gate">
+  <div class="card stack">
+    <div>
+      <h1>Dossier familial</h1>
+      <p class="help">Les informations à transmettre à ma famille si je décède, si je suis dans l'incapacité d'agir ou si je suis absent longtemps.</p>
+    </div>
+    <div id="gate-open" hidden class="stack">
+      <div>
+        <label for="pass-open">Phrase secrète</label>
+        <input id="pass-open" type="password" autocomplete="current-password">
+      </div>
+      <div class="error" id="err-open"></div>
+      <div class="gate-actions" style="display:flex">
+        <button class="primary" id="btn-open">Ouvrir le dossier</button>
+        <button id="btn-import-gate">Ouvrir un fichier de sauvegarde…</button>
+      </div>
+      <p class="help">Vous trouverez la phrase secrète à l'endroit indiqué dans la lettre qui accompagne ce dossier.</p>
+    </div>
+    <div id="gate-create" hidden class="stack">
+      <div class="info">Aucun dossier n'est enregistré dans ce navigateur. Créez-en un, ou ouvrez un fichier de sauvegarde (.json) si on vous en a remis un.</div>
+      <div>
+        <label for="pass-new">Choisir une phrase secrète</label>
+        <p class="help">Prenez au moins 4 ou 5 mots au hasard, par exemple « cerise-tramway-falaise-hibou-79 ». Si elle est perdue, personne ne pourra lire le dossier, pas même vous.</p>
+        <input id="pass-new" type="password" autocomplete="new-password">
+      </div>
+      <div>
+        <label for="pass-new2">Confirmer la phrase secrète</label>
+        <input id="pass-new2" type="password" autocomplete="new-password">
+      </div>
+      <div class="error" id="err-create"></div>
+      <div class="gate-actions" style="display:flex">
+        <button class="primary" id="btn-create">Créer le dossier</button>
+        <button id="btn-import-gate2">Ouvrir un fichier de sauvegarde…</button>
+      </div>
+    </div>
+    <p class="help">Tout reste sur cet appareil et est chiffré (AES‑256). Rien n'est envoyé sur Internet.</p>
+  </div>
+</div>
+<input type="file" id="file-import" accept=".json,application/json" hidden>
+
+<!-- ===== Application ===== -->
+<div id="app">
+  <header class="top">
+    <div class="top-inner">
+      <span class="brand">Dossier familial</span>
+      <div class="mode-switch" role="group" aria-label="Mode">
+        <button id="mode-read" aria-pressed="true">Consulter</button>
+        <button id="mode-edit" aria-pressed="false">Remplir</button>
+      </div>
+      <button id="btn-export" title="Télécharger une copie chiffrée du dossier">Sauvegarder</button>
+      <button id="btn-print" title="Imprimer ou enregistrer en PDF">Imprimer</button>
+      <button id="btn-menu" class="ghost" title="Autres actions">⋯</button>
+      <button id="btn-lock">Verrouiller</button>
+      <span class="save-state" id="save-state"></span>
+    </div>
+    <div id="menu" hidden class="top-inner no-print" style="padding-top:0">
+      <button class="small" id="btn-import">Importer une sauvegarde</button>
+      <button class="small" id="btn-chpass">Changer la phrase secrète</button>
+      <button class="small" id="btn-theme">Thème clair / sombre</button>
+      <button class="small danger" id="btn-wipe">Effacer de ce navigateur</button>
+    </div>
+  </header>
+  <div class="layout">
+    <nav class="side" id="side-nav" aria-label="Sections"></nav>
+    <main>
+      <select id="mobile-nav" aria-label="Aller à la section"></select>
+      <div id="content"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   Contenu du dossier.
+   Chaque section contient des blocs :
+     field     : un champ simple (text, textarea, select, date)
+     list      : une liste d'éléments que l'on peut répéter (comptes, contacts…)
+     checklist : une liste de tâches à cocher (protocoles)
+     note      : un texte d'explication
+   ===================================================================== */
+const SCHEMA = [
+  { id: "accueil", title: "À lire en premier",
+    intro: "Ce dossier rassemble ce dont vous aurez besoin si je ne peux plus m'occuper des choses moi-même. Prenez votre temps : à part les obsèques, rien ne presse au point de devoir tout faire le premier jour.",
+    blocks: [
+      { kind: "field", id: "auteur", label: "Auteur du dossier", type: "text", placeholder: "Prénom Nom" },
+      { kind: "field", id: "maj", label: "Dernière mise à jour", type: "date" },
+      { kind: "field", id: "lettre", label: "Mot d'introduction", type: "textarea",
+        placeholder: "Si vous lisez ceci, c'est que… Je vous aime. Voici comment j'ai organisé les choses pour vous faciliter la vie." },
+      { kind: "field", id: "exemplaires", label: "Où trouver les exemplaires de ce dossier", type: "textarea",
+        help: "Par exemple : version papier dans le coffre, fichier chiffré sur une clé USB dans le tiroir du bureau, copie confiée au notaire.",
+        placeholder: "1. …\n2. …" },
+      { kind: "field", id: "phrase", label: "Où trouver la phrase secrète", type: "textarea",
+        help: "N'écrivez pas la phrase ici, seulement l'endroit où elle se trouve (enveloppe scellée, notaire, coffre…)." },
+      { kind: "field", id: "residence", label: "Pays de résidence et nationalités", type: "textarea",
+        help: "Important si la famille vit hors du Maroc ou a plusieurs nationalités : la loi applicable et les démarches peuvent alors différer (consulat, transcription des actes, biens dans plusieurs pays)." }
+    ] },
+
+  { id: "contacts", title: "Personnes à contacter",
+    intro: "Les personnes qui savent ou qui peuvent aider. Marquez « Prioritaire » celles à appeler en premier : elles apparaîtront sur la fiche réflexe.",
+    blocks: [
+      { kind: "list", id: "liste", label: "Contacts", itemLabel: "Contact",
+        fields: [
+          { id: "role", label: "Rôle", type: "text", placeholder: "Adoul, notaire, médecin, banquier…" },
+          { id: "nom", label: "Nom", type: "text" },
+          { id: "tel", label: "Téléphone", type: "text" },
+          { id: "email", label: "E-mail / adresse", type: "text" },
+          { id: "prio", label: "Prioritaire", type: "select", options: ["", "Oui"] },
+          { id: "notes", label: "Ce qu'il/elle sait ou peut faire", type: "textarea" }
+        ],
+        seed: ["Adoul", "Notaire", "Avocat", "Médecin traitant", "Banquier / conseiller", "Assureur", "Employeur / RH", "Expert-comptable", "Ami(e) de confiance", "Famille proche"].map(r => ({ role: r })) }
+    ] },
+
+  { id: "protocoles", title: "Que faire selon la situation",
+    intro: "Une liste de tâches pour chaque cas. Cochez au fur et à mesure : ce qui est coché est enregistré. Les démarches indiquées suivent le droit marocain (Code de la famille – Moudawana, loi sur l'état civil) ; les pratiques varient selon les villes et les tribunaux : faites-vous confirmer chaque étape par l'adoul, le notaire ou l'avocat.",
+    blocks: [
+      { kind: "scenarios" }
+    ] },
+
+  { id: "documents", title: "Où sont les documents",
+    intro: "L'endroit où se trouve chaque document important : original papier, copie, scan, coffre…",
+    blocks: [
+      { kind: "list", id: "liste", label: "Documents", itemLabel: "Document",
+        fields: [
+          { id: "doc", label: "Document", type: "text" },
+          { id: "ou", label: "Où le trouver", type: "text" },
+          { id: "notes", label: "Remarques", type: "text" }
+        ],
+        seed: ["Acte de mariage (adoulaire)", "Livret d'état civil / actes de naissance", "Acte séparé sur la gestion des biens du couple (art. 49 Moudawana), s'il existe", "Testament (wasiya) : adoul ou notaire qui le détient", "Actes de donation (hiba)", "Titres fonciers / actes de propriété (n° de titre, conservation foncière)", "Contrats d'assurance décès / épargne", "Contrats de prêt et d'assurance emprunteur", "Attestations CNSS / CMR / CIMR / RCAR, AMO", "Bulletins de paie / contrat de travail", "Déclarations et avis d'impôt (DGI)", "CIN, passeports, cartes de séjour", "Cartes grises des véhicules", "Procurations (wakala) existantes", "Clés ou code du coffre (emplacement)"].map(d => ({ doc: d })) }
+    ] },
+
+  { id: "finances", title: "Banques, épargne et assurances",
+    intro: "Ne notez pas de codes de carte ni de mots de passe bancaires : la banque traite avec les héritiers sur présentation de l'acte de décès et de l'acte d'hérédité.",
+    blocks: [
+      { kind: "list", id: "comptes", label: "Comptes bancaires", itemLabel: "Compte",
+        help: "Indiquez si un compte est joint et s'il est « solidaire » (chaque titulaire peut agir seul) : demandez-le à votre banque, car le sort du compte joint au décès dépend de la convention signée.",
+        fields: [
+          { id: "banque", label: "Banque", type: "text" },
+          { id: "type", label: "Type", type: "text", placeholder: "Compte chèque, joint, épargne, compte en devises, compte à l'étranger…" },
+          { id: "titulaire", label: "Titulaire(s)", type: "text" },
+          { id: "num", label: "N° (4 derniers chiffres suffisent)", type: "text" },
+          { id: "contact", label: "Agence / conseiller", type: "text" },
+          { id: "notes", label: "Remarques", type: "textarea" }
+        ] },
+      { kind: "list", id: "placements", label: "Placements (actions, OPCVM, plan d'épargne, or, crypto…)", itemLabel: "Placement",
+        fields: [
+          { id: "etab", label: "Établissement", type: "text" },
+          { id: "type", label: "Type", type: "text" },
+          { id: "valeur", label: "Valeur approximative", type: "text" },
+          { id: "notes", label: "Comment y accéder / que faire", type: "textarea" }
+        ] },
+      { kind: "list", id: "assurances", label: "Assurances décès, épargne et prévoyance", itemLabel: "Contrat",
+        help: "Le capital d'un contrat d'assurance décès est versé aux bénéficiaires désignés. Ce sont eux qui doivent contacter l'assureur. Vérifiez régulièrement la clause bénéficiaire.",
+        fields: [
+          { id: "assureur", label: "Assureur", type: "text" },
+          { id: "type", label: "Type", type: "text", placeholder: "Assurance décès, épargne retraite, prévoyance employeur, Takaful…" },
+          { id: "num", label: "N° de contrat", type: "text" },
+          { id: "benef", label: "Bénéficiaires", type: "text" },
+          { id: "contact", label: "Contact", type: "text" },
+          { id: "notes", label: "Remarques", type: "textarea" }
+        ] },
+      { kind: "list", id: "credits", label: "Crédits en cours", itemLabel: "Crédit",
+        help: "Les crédits immobiliers et souvent les crédits à la consommation sont couverts par une assurance décès-invalidité, qui rembourse le capital restant dû.",
+        fields: [
+          { id: "org", label: "Organisme", type: "text" },
+          { id: "objet", label: "Objet", type: "text" },
+          { id: "mens", label: "Mensualité / fin", type: "text" },
+          { id: "assur", label: "Assurance décès-invalidité (assureur, couverture)", type: "text" },
+          { id: "notes", label: "Remarques", type: "textarea" }
+        ] },
+      { kind: "field", id: "dettes", label: "Dettes ou engagements à connaître", type: "textarea",
+        help: "Prêts entre particuliers, cautions données, sommes dues ou qu'on me doit. Les dettes sont payées sur la succession avant le partage entre héritiers." }
+    ] },
+
+  { id: "patrimoine", title: "Biens",
+    blocks: [
+      { kind: "list", id: "immo", label: "Biens immobiliers", itemLabel: "Bien",
+        fields: [
+          { id: "adresse", label: "Adresse / ville / pays", type: "text" },
+          { id: "titre", label: "N° de titre foncier (ou « melkia » non immatriculé)", type: "text" },
+          { id: "propr", label: "Propriétaires / quote-part", type: "text" },
+          { id: "notes", label: "Usage, locataires, syndic, gestion, assurance", type: "textarea" }
+        ] },
+      { kind: "list", id: "vehicules", label: "Véhicules", itemLabel: "Véhicule",
+        fields: [
+          { id: "modele", label: "Modèle / immatriculation", type: "text" },
+          { id: "financement", label: "Financement (comptant, crédit, leasing)", type: "text" },
+          { id: "notes", label: "Assurance, garage, clés", type: "text" }
+        ] },
+      { kind: "list", id: "objets", label: "Objets de valeur ou à transmettre", itemLabel: "Objet",
+        fields: [
+          { id: "objet", label: "Objet", type: "text" },
+          { id: "ou", label: "Où", type: "text" },
+          { id: "pour", label: "Souhait (pour qui, histoire de l'objet)", type: "textarea" }
+        ] },
+      { kind: "field", id: "societes", label: "Entreprise, parts sociales, associés", type: "textarea" }
+    ] },
+
+  { id: "charges", title: "Factures et abonnements",
+    intro: "Ce qui est payé chaque mois, et ce qu'il faut garder, transférer ou résilier.",
+    blocks: [
+      { kind: "list", id: "liste", label: "Charges récurrentes", itemLabel: "Charge",
+        fields: [
+          { id: "qui", label: "Fournisseur", type: "text" },
+          { id: "objet", label: "Objet", type: "text" },
+          { id: "montant", label: "Montant / fréquence", type: "text" },
+          { id: "compte", label: "Payé depuis", type: "text" },
+          { id: "action", label: "À faire", type: "select", options: ["", "Garder", "Transférer au nom du conjoint", "Résilier"] }
+        ],
+        seed: ["Eau et électricité (Lydec, Redal, Amendis, ONEE…)", "Internet / téléphone fixe", "Téléphones mobiles", "Assurance habitation", "Assurance automobile", "Mutuelle / assurance maladie complémentaire", "Frais de scolarité des enfants", "Taxe d'habitation / taxe de services communaux", "Loyer ou charges de copropriété (syndic)", "Abonnements (streaming, sport…)"].map(o => ({ objet: o })) },
+      { kind: "field", id: "impots", label: "Impôts", type: "textarea",
+        help: "Identifiant fiscal, accès au portail de la DGI, revenus fonciers, taxes locales, impôts éventuels dans un autre pays." }
+    ] },
+
+  { id: "numerique", title: "Vie numérique",
+    intro: "Le plus sûr : un gestionnaire de mots de passe (Bitwarden, 1Password, Proton Pass…) avec un « accès d'urgence » donné à votre conjoint. Notez ici comment y accéder plutôt que les mots de passe eux-mêmes.",
+    blocks: [
+      { kind: "field", id: "gestionnaire", label: "Gestionnaire de mots de passe et accès d'urgence", type: "textarea",
+        placeholder: "Outil utilisé, qui a l'accès d'urgence, délai d'activation, où est le kit de secours…" },
+      { kind: "field", id: "appareils", label: "Téléphone, ordinateur, tablette", type: "textarea",
+        help: "Où sont les codes de déverrouillage (ou à qui les demander), le code PIN de la carte SIM et la double authentification (2FA). Beaucoup de banques envoient leurs codes par SMS : le téléphone et la ligne doivent rester actifs." },
+      { kind: "list", id: "comptes", label: "Comptes importants", itemLabel: "Compte",
+        fields: [
+          { id: "service", label: "Service", type: "text", placeholder: "Messagerie, Google/Apple, WhatsApp, réseaux sociaux, photos…" },
+          { id: "id", label: "Identifiant", type: "text" },
+          { id: "acces", label: "Comment y accéder", type: "text" },
+          { id: "souhait", label: "Souhait", type: "select", options: ["", "Conserver", "Récupérer les photos puis fermer", "Transformer en compte commémoratif", "Supprimer"] }
+        ],
+        seed: ["E-mail principal", "Compte Google / Apple", "WhatsApp", "Photos et vidéos", "Facebook / Instagram", "Stockage en ligne"].map(s => ({ service: s })) },
+      { kind: "field", id: "crypto", label: "Cryptomonnaies", type: "textarea",
+        help: "Où sont la phrase de récupération / le portefeuille matériel. Sans cette information, les fonds sont perdus pour toujours." }
+    ] },
+
+  { id: "sante", title: "Santé et volontés médicales",
+    intro: "Le droit marocain ne prévoit pas de « directives anticipées » ayant force obligatoire. Vos souhaits écrits restent précieux : ils guident votre famille et les médecins.",
+    blocks: [
+      { kind: "field", id: "medical", label: "Informations médicales utiles", type: "textarea",
+        placeholder: "Groupe sanguin, allergies, traitements en cours, antécédents, spécialistes qui me suivent, n° d'immatriculation AMO / mutuelle…" },
+      { kind: "field", id: "confiance", label: "Personne que je souhaite voir parler en mon nom aux médecins", type: "text" },
+      { kind: "field", id: "directives", label: "Mes souhaits en cas de maladie grave ou de fin de vie", type: "textarea",
+        help: "Réanimation, acharnement thérapeutique, lieu de soins (domicile, hôpital), accompagnement religieux…" },
+      { kind: "field", id: "organes", label: "Don d'organes", type: "select", options: ["", "J'accepte (déclaration faite au tribunal de première instance)", "Je refuse (refus enregistré au tribunal de première instance)", "Je n'ai pas décidé"],
+        help: "Loi n° 16-98 : la volonté de donner ou de refuser se déclare auprès du président du tribunal de première instance (ou d'un juge désigné)." },
+      { kind: "field", id: "protection", label: "Si je ne peux plus gérer mes affaires", type: "textarea",
+        help: "Qui je souhaite voir désigné par le juge pour me représenter (mouqaddem) ? Quelles procurations (wakala) existent ? Attention : une procuration peut cesser de produire effet si je perds la raison, et elle prend fin à mon décès." }
+    ] },
+
+  { id: "obseques", title: "Obsèques",
+    intro: "Au Maroc, l'inhumation a souvent lieu dans les 24 heures : c'est la seule chose vraiment urgente. Écrire vos souhaits évite à vos proches de devoir décider dans la précipitation.",
+    blocks: [
+      { kind: "field", id: "lieu", label: "Lieu d'inhumation", type: "textarea",
+        placeholder: "Ville, cimetière, auprès de qui… Si je décède à l'étranger : rapatriement au Maroc ou inhumation sur place ?" },
+      { kind: "field", id: "rapatriement", label: "Assurance rapatriement / assistance", type: "text",
+        help: "Banque, carte bancaire, assurance voyage, mutuelle ou association : beaucoup couvrent le rapatriement du corps. Indiquez l'organisme et le numéro de contrat." },
+      { kind: "field", id: "ceremonie", label: "Cérémonie et rites", type: "textarea", placeholder: "Toilette funéraire, prière, lecture du Coran, condoléances (azza), aumône (sadaqa)…" },
+      { kind: "field", id: "prevenir", label: "Personnes à prévenir", type: "textarea" }
+    ] },
+
+  { id: "pro", title: "Vie professionnelle",
+    blocks: [
+      { kind: "field", id: "employeur", label: "Employeur / activité", type: "textarea", placeholder: "Entreprise, contact RH, statut…" },
+      { kind: "field", id: "avantages", label: "Prévoyance et avantages de l'employeur", type: "textarea",
+        help: "Assurance groupe décès-invalidité, capital décès, indemnités de fin de carrière, épargne d'entreprise, assurance maladie complémentaire." },
+      { kind: "field", id: "retraite", label: "Caisses de sécurité sociale et de retraite", type: "textarea",
+        help: "N° d'immatriculation CNSS (secteur privé), CMR (fonctionnaires), RCAR, CIMR (complémentaire) et caisses étrangères éventuelles. Elles versent les pensions de survivants (conjoint et enfants)." },
+      { kind: "field", id: "independant", label: "Si je suis indépendant ou dirigeant", type: "textarea",
+        placeholder: "Clients en cours, associés, expert-comptable, qui peut assurer la continuité, comptes professionnels, registre du commerce…" }
+    ] },
+
+  { id: "enfants", title: "Pour les enfants",
+    intro: "Si le père décède, la mère majeure devient la représentante légale des enfants mineurs (art. 231 de la Moudawana). Le juge garde un droit de regard sur la gestion de leurs biens.",
+    blocks: [
+      { kind: "field", id: "tuteur", label: "Tuteur testamentaire souhaité (wassi) si les deux parents disparaissent", type: "textarea",
+        help: "Le père, puis la mère, peuvent désigner un tuteur testamentaire, par acte d'adoul ou de notaire. Sans désignation, c'est le juge qui nomme un tuteur (mouqaddem)." },
+      { kind: "field", id: "quotidien", label: "Le quotidien", type: "textarea", placeholder: "École, activités, médecins, amis, habitudes importantes…" },
+      { kind: "field", id: "epargne", label: "Épargne ou comptes à leur nom", type: "textarea" },
+      { kind: "field", id: "souhaits", label: "Mes souhaits pour eux", type: "textarea", placeholder: "Études, valeurs, ce qui compte pour moi…" }
+    ] },
+
+  { id: "maison", title: "La maison au quotidien",
+    blocks: [
+      { kind: "field", id: "technique", label: "Compteurs, chauffe-eau, alarme, coupures", type: "textarea",
+        placeholder: "Où sont le disjoncteur et la vanne d'eau, bouteilles de gaz, entretien, code de l'alarme (ou à qui le demander)…" },
+      { kind: "field", id: "artisans", label: "Artisans, gardien et voisins de confiance", type: "textarea" },
+      { kind: "field", id: "animaux", label: "Animaux", type: "textarea", placeholder: "Vétérinaire, alimentation, qui peut les garder…" }
+    ] },
+
+  { id: "messages", title: "Mots personnels",
+    intro: "Une lettre écrite à la main garde sa force. Vous pouvez ici écrire quelques mots, ou indiquer où se trouvent vos lettres.",
+    blocks: [
+      { kind: "list", id: "liste", label: "Messages", itemLabel: "Message",
+        fields: [
+          { id: "pour", label: "Pour", type: "text" },
+          { id: "quand", label: "Quand le lire", type: "text", placeholder: "Tout de suite, à ses 18 ans, le jour de son mariage…" },
+          { id: "message", label: "Message ou emplacement de la lettre", type: "textarea" }
+        ] }
+    ] }
+];
+
+/* Protocoles par situation (droit marocain, à faire confirmer au cas par cas). */
+const SCENARIOS = [
+  { id: "deces", title: "Décès", steps: [
+    ["Jour 1", "Faire constater le décès par un médecin. À domicile : médecin traitant ou bureau municipal d'hygiène de la commune. À l'hôpital, l'établissement délivre le certificat."],
+    ["Jour 1", "Prévenir les personnes marquées « Prioritaire » dans la section Contacts."],
+    ["Jour 1", "Obtenir le permis d'inhumer auprès de la commune et organiser l'inhumation selon mes souhaits (section Obsèques)."],
+    ["Jour 1", "Décès à l'étranger : contacter le consulat du Maroc et l'assistance rapatriement (section Obsèques), qui s'occupe en général des formalités et du transport."],
+    ["30 jours", "Déclarer le décès au bureau d'état civil de la commune où il a eu lieu, dans les 30 jours (loi n° 37-99). À l'étranger : déclaration au consulat, ou transcription de l'acte local."],
+    ["Semaine 1", "Demander plusieurs copies intégrales de l'acte de décès : banques, assureurs, employeur, caisses et adouls en demanderont."],
+    ["Semaine 1", "Prévenir l'employeur et l'assurance maladie (AMO, mutuelle)."],
+    ["Semaine 1", "Prévenir les banques. Les comptes au seul nom du défunt sont bloqués ; le sort du compte joint dépend de sa convention (voir section Banques). Garder de quoi vivre sur un compte au nom du conjoint."],
+    ["Semaine 2", "Faire établir l'acte d'hérédité (« iraata ») par deux adouls, sur témoignage, puis le faire homologuer par le juge chargé du notariat au tribunal de première instance. C'est le document clé : il liste les héritiers."],
+    ["Semaine 2", "Rechercher un testament (wasiya) auprès de l'adoul ou du notaire indiqués dans la section Documents."],
+    ["Semaine 2", "Assurances décès : les bénéficiaires contactent chaque assureur avec l'acte de décès. Crédits : déclarer le décès à l'assurance décès-invalidité, qui rembourse le capital restant dû."],
+    ["Mois 1", "Pensions de survivants : déposer le dossier auprès de la caisse concernée (CNSS, CMR, RCAR, CIMR…). Demander aussi l'allocation décès et les éventuelles prestations de l'employeur."],
+    ["Mois 1", "Transférer ou résilier les contrats et abonnements (section Factures) ; appliquer les souhaits pour les comptes en ligne (section Vie numérique)."],
+    ["Mois 1–6", "Inventorier les biens et les dettes, puis payer les dettes et les frais avant tout partage. Un notaire ou un avocat peut accompagner le partage, à l'amiable ou devant le tribunal."],
+    ["Mois 1–6", "Biens immobiliers : faire inscrire l'acte d'hérédité à la conservation foncière (ANCFCC) sur chaque titre foncier. Il n'y a pas de droits de succession au Maroc, mais certaines formalités (enregistrement, conservation foncière) ont un coût."],
+    ["Si besoin", "Biens ou comptes à l'étranger : la loi et les démarches du pays concerné s'appliquent (souvent un notaire sur place). Prévoir la traduction et la légalisation des actes."],
+    ["Tout du long", "Prendre soin de vous. Éviter les grandes décisions financières (vente, placement) dans les premiers mois. Accepter l'aide proposée."]
+  ] },
+  { id: "incapacite", title: "Incapacité (maladie, accident)", steps: [
+    ["Jour 1", "Remettre aux médecins les informations médicales et mes souhaits (section Santé)."],
+    ["Jour 1", "Prévenir les contacts « Prioritaire » et l'employeur (arrêt de travail)."],
+    ["Semaine 1", "Vérifier les procurations (wakala) et comptes joints existants pour payer les dépenses courantes. Une procuration peut ne plus être acceptée si la banque apprend que je ne suis plus lucide."],
+    ["Semaine 1", "Accès numériques : activer l'accès d'urgence du gestionnaire de mots de passe (section Vie numérique)."],
+    ["Mois 1", "Prévoyance : déclarer l'arrêt à l'assurance groupe de l'employeur, à l'AMO / mutuelle, et à l'assurance décès-invalidité des crédits (garantie invalidité)."],
+    ["Mois 1", "Suivre les charges (section Factures) pour éviter les impayés ; demander des délais si nécessaire."],
+    ["Si durable", "Si l'incapacité dure et que des actes importants doivent être faits (vendre, signer, gérer les comptes) : demander au tribunal de première instance (section de la famille) de prononcer l'interdiction et de désigner un représentant (mouqaddem), sur la base d'une expertise médicale. Se faire accompagner par un avocat."],
+    ["Tout du long", "Tenir un cahier : dates, interlocuteurs, décisions. Ne pas rester seul(e) : s'appuyer sur la famille, l'assistante sociale de l'hôpital ou des associations."]
+  ] },
+  { id: "absence", title: "Absence prolongée / injoignable", steps: [
+    ["Immédiat", "Si l'absence est inquiétante : la signaler sans attendre à la police (DGSN) en ville ou à la Gendarmerie royale en zone rurale."],
+    ["Immédiat", "Si je suis à l'étranger : contacter le consulat ou l'ambassade du Maroc dans le pays, et la cellule de crise des affaires consulaires."],
+    ["Semaine 1", "Prévenir l'employeur et les contacts « Prioritaire »."],
+    ["Semaine 1", "Gérer le quotidien avec le compte joint et les procurations ; vérifier les échéances (sections Factures et Crédits)."],
+    ["Mois 1+", "Si l'absence se prolonge : le tribunal peut désigner un représentant pour gérer mes biens et protéger les intérêts de la famille (Moudawana, « absent » et « disparu »). Se faire accompagner par un avocat."],
+    ["Long terme", "Sans aucune nouvelle, le tribunal peut, après enquête, déclarer le décès du disparu : après un an dans des circonstances exceptionnelles (catastrophe, guerre…), sinon après un délai qu'il fixe (art. 327 de la Moudawana). Ce jugement ouvre la succession."]
+  ] }
+];
+
+/* ===================================================================== */
+/* Chiffrement                                                            */
+/* ===================================================================== */
+const STORE_KEY = "dossier-familial-v1";
+const ITER = 600000;
+const enc = new TextEncoder(), dec = new TextDecoder();
+const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+async function deriveKey(pass, salt, iter) {
+  const base = await crypto.subtle.importKey("raw", enc.encode(pass), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: iter, hash: "SHA-256" },
+    base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+async function seal(obj) {
+  // On fige clé, sel et itérations tout de suite : l'état peut changer pendant le chiffrement (verrouillage).
+  const { key, salt, iter } = S;
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(JSON.stringify(obj)));
+  return { format: "dossier-familial", v: 1, kdf: "PBKDF2-SHA256", iter, salt: b64(salt), iv: b64(iv), ct: b64(ct) };
+}
+async function unseal(pkg, pass) {
+  const salt = unb64(pkg.salt), key = await deriveKey(pass, salt, pkg.iter);
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(pkg.iv) }, key, unb64(pkg.ct));
+  return { key, salt, iter: pkg.iter, data: JSON.parse(dec.decode(pt)) };
+}
+
+const store = {
+  get() { try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch { return null; } },
+  set(v) { try { localStorage.setItem(STORE_KEY, JSON.stringify(v)); return true; } catch { return false; } },
+  del() { try { localStorage.removeItem(STORE_KEY); } catch {} }
+};
+
+/* ===================================================================== */
+/* État                                                                   */
+/* ===================================================================== */
+const S = { key: null, salt: null, iter: ITER, data: null, mode: "read", scenario: "deces" };
+let pendingImport = null;
+
+function freshData() {
+  const d = { checks: {} };
+  for (const sec of SCHEMA) {
+    d[sec.id] = {};
+    for (const b of sec.blocks) if (b.kind === "list") d[sec.id][b.id] = (b.seed || []).map(x => ({ ...x }));
+  }
+  return d;
+}
+function ensureShape(d) {
+  d.checks = d.checks || {};
+  for (const sec of SCHEMA) {
+    d[sec.id] = d[sec.id] || {};
+    for (const b of sec.blocks) if (b.kind === "list" && !Array.isArray(d[sec.id][b.id])) d[sec.id][b.id] = [];
+  }
+  return d;
+}
+
+let saveTimer = null;
+function scheduleSave() {
+  setSaveState("Modifications non enregistrées…");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 600);
+}
+async function saveNow() {
+  clearTimeout(saveTimer);
+  if (!S.key) return;
+  const ok = store.set(await seal(S.data));
+  setSaveState(ok ? "Enregistré (chiffré)" : "⚠ Échec de l'enregistrement local : utilisez « Sauvegarder »");
+  refreshCounts();
+}
+function setSaveState(t) { document.getElementById("save-state").textContent = t; }
+
+/* ===================================================================== */
+/* Utilitaires DOM                                                        */
+/* ===================================================================== */
+function h(tag, attrs = {}, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "class") el.className = v;
+    else if (k === "text") el.textContent = v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null) el.append(c);
+  return el;
+}
+const fill = (el, ...kids) => el.replaceChildren(...kids.flat(Infinity).filter(k => k != null));
+let uid = 0;
+const isFilled = v => typeof v === "string" ? v.trim() !== "" : false;
+
+function inputFor(f, value, onChange) {
+  const id = "f" + (++uid);
+  let el;
+  if (f.type === "textarea") el = h("textarea", { id, placeholder: f.placeholder });
+  else if (f.type === "select") el = h("select", { id }, f.options.map(o => h("option", { value: o, text: o || "—" })));
+  else el = h("input", { id, type: f.type === "date" ? "date" : "text", placeholder: f.placeholder });
+  el.value = value || "";
+  el.addEventListener(f.type === "select" ? "change" : "input", () => onChange(el.value));
+  return h("div", { class: "field" },
+    h("label", { for: id, text: f.label }),
+    f.help ? h("p", { class: "help", text: f.help }) : null,
+    el);
+}
+
+/* ===================================================================== */
+/* Rendu                                                                  */
+/* ===================================================================== */
+function render() {
+  const content = document.getElementById("content");
+  content.replaceChildren();
+  if (S.mode === "read") content.append(renderReflexe());
+  for (const sec of SCHEMA) content.append(renderSection(sec));
+  renderNav();
+}
+
+function renderSection(sec) {
+  const el = h("section", { class: "sec", id: "s-" + sec.id },
+    h("h2", { text: sec.title }),
+    sec.intro ? h("p", { class: "sec-intro", text: sec.intro }) : null);
+  const d = S.data[sec.id];
+  let anything = false;
+  for (const b of sec.blocks) {
+    let node;
+    if (b.kind === "scenarios") node = renderScenarios();
+    else if (S.mode === "edit") node = b.kind === "list" ? editList(sec, b) : inputFor(b, d[b.id], v => { d[b.id] = v; scheduleSave(); });
+    else node = b.kind === "list" ? readList(b, d[b.id]) : readField(b, d[b.id]);
+    if (node) { el.append(node); anything = true; }
+  }
+  if (S.mode === "read" && !anything) el.append(h("p", { class: "empty", text: "Rien de renseigné pour l'instant." }));
+  return el;
+}
+
+function editList(sec, b) {
+  const wrap = h("div", {});
+  const draw = () => {
+    const arr = S.data[sec.id][b.id];
+    fill(wrap, 
+      h("h3", { text: b.label }),
+      b.help ? h("p", { class: "help", text: b.help }) : null,
+      arr.map((item, i) => h("div", { class: "list-item" },
+        h("div", { class: "item-head" },
+          h("span", { text: `${b.itemLabel} ${i + 1}` }),
+          h("button", { class: "small ghost danger", title: "Supprimer", text: "Supprimer",
+            onclick: () => { if (confirm("Supprimer cet élément ?")) { arr.splice(i, 1); scheduleSave(); draw(); } } })),
+        h("div", { class: "grid" }, b.fields.map(f => {
+          const node = inputFor(f, item[f.id], v => { item[f.id] = v; scheduleSave(); });
+          if (f.type === "textarea") node.style.gridColumn = "1 / -1";
+          return node;
+        })))),
+      h("button", { class: "small", text: "+ Ajouter", onclick: () => { arr.push({}); scheduleSave(); draw(); } }));
+  };
+  draw();
+  return wrap;
+}
+
+function readField(b, v) {
+  if (!isFilled(v)) return null;
+  const val = b.type === "date" ? new Date(v + "T12:00").toLocaleDateString("fr-FR", { dateStyle: "long" }) : v;
+  return h("div", { class: "read-field" }, h("div", { class: "k", text: b.label }), h("div", { class: "v", text: val }));
+}
+
+function readList(b, arr) {
+  // On n'affiche que les lignes et colonnes réellement renseignées.
+  const key = b.fields[0].id;
+  const rows = (arr || []).filter(it => b.fields.some(f => f.id !== key && isFilled(it[f.id])) || (isFilled(it[key]) && !(b.seed || []).some(s => s[key] === it[key])));
+  if (!rows.length) return null;
+  const cols = b.fields.filter(f => rows.some(r => isFilled(r[f.id])));
+  return h("div", {},
+    h("h3", { text: b.label }),
+    h("table", { class: "read-table" },
+      h("thead", {}, h("tr", {}, cols.map(c => h("th", { text: c.label })))),
+      h("tbody", {}, rows.map(r => h("tr", {}, cols.map(c => h("td", { text: r[c.id] || "" })))))));
+}
+
+function renderScenarios() {
+  const wrap = h("div", {});
+  const tabs = h("div", { class: "tabs", role: "tablist" });
+  const body = h("div", {});
+  const draw = () => {
+    tabs.replaceChildren(...SCENARIOS.map(sc => h("button", { role: "tab", "aria-selected": String(S.scenario === sc.id), text: sc.title,
+      onclick: () => { S.scenario = sc.id; draw(); } })));
+    const sc = SCENARIOS.find(s => s.id === S.scenario);
+    const done = sc.steps.filter((_, i) => S.data.checks[sc.id + ":" + i]).length;
+    fill(body, 
+      h("p", { class: "help", text: `${done} / ${sc.steps.length} étapes faites` }),
+      h("ul", { class: "checklist" }, sc.steps.map(([when, txt], i) => {
+        const k = sc.id + ":" + i, id = "c-" + k.replace(":", "-");
+        const cb = h("input", { type: "checkbox", id });
+        cb.checked = !!S.data.checks[k];
+        cb.addEventListener("change", () => { S.data.checks[k] = cb.checked; scheduleSave(); draw(); });
+        return h("li", {}, cb, h("label", { for: id, style: "font-weight:400;margin:0", class: cb.checked ? "done" : "" },
+          h("span", { class: "when", text: when }), txt));
+      })),
+      S.mode === "edit"
+        ? inputFor({ label: "Mes consignes pour cette situation", type: "textarea", placeholder: "Ce que je veux ajouter de personnel…" },
+            S.data.protocoles["notes_" + sc.id], v => { S.data.protocoles["notes_" + sc.id] = v; scheduleSave(); })
+        : readField({ label: "Consignes personnelles", type: "textarea" }, S.data.protocoles["notes_" + sc.id]));
+  };
+  draw();
+  // Sur papier, on imprime toutes les situations, cases vides.
+  const printAll = h("div", { class: "print-only" }, SCENARIOS.map(sc => h("div", {},
+    h("h3", { text: sc.title }),
+    h("ul", { class: "checklist" }, sc.steps.map(([when, txt]) => h("li", {}, h("span", { text: "☐ " }), h("span", {}, h("span", { class: "when", text: when }), txt)))),
+    readField({ label: "Consignes personnelles", type: "textarea" }, S.data.protocoles["notes_" + sc.id]))));
+  wrap.append(h("div", { class: "screen-only" }, tabs, body), printAll);
+  return wrap;
+}
+
+function renderReflexe() {
+  const prio = S.data.contacts.liste.filter(c => c.prio === "Oui" && (isFilled(c.nom) || isFilled(c.tel)));
+  const a = S.data.accueil;
+  return h("section", { class: "sec reflexe", id: "s-reflexe" },
+    h("h2", { text: "Fiche réflexe" }),
+    isFilled(a.lettre) ? h("p", { class: "v", style: "white-space:pre-wrap", text: a.lettre }) : null,
+    h("h3", { text: "Appeler en premier" }),
+    prio.length
+      ? h("table", { class: "read-table" }, h("tbody", {}, prio.map(c => h("tr", {},
+          h("td", { text: c.role || "" }), h("td", { text: c.nom || "" }), h("td", { text: c.tel || "" }), h("td", { text: c.notes || "" })))))
+      : h("p", { class: "empty", text: "Aucun contact prioritaire. Passez en mode « Remplir », section Contacts, et choisissez « Oui » dans Prioritaire." }),
+    h("p", {}, "Ensuite, ouvrez la section ", h("a", { href: "#s-protocoles", text: "Que faire selon la situation" }), " et suivez les étapes une par une."),
+    isFilled(a.maj) ? h("p", { class: "help", text: "Dossier mis à jour le " + new Date(a.maj + "T12:00").toLocaleDateString("fr-FR", { dateStyle: "long" }) }) : null);
+}
+
+function sectionCount(sec) {
+  let n = 0, t = 0;
+  const d = S.data[sec.id];
+  for (const b of sec.blocks) {
+    if (b.kind === "field") { t++; if (isFilled(d[b.id])) n++; }
+    else if (b.kind === "list") { t++; if (d[b.id].some(it => b.fields.slice(1).some(f => isFilled(it[f.id])))) n++; }
+  }
+  return t ? `${n}/${t}` : "";
+}
+function renderNav() {
+  const side = document.getElementById("side-nav"), mob = document.getElementById("mobile-nav");
+  const items = (S.mode === "read" ? [{ id: "reflexe", title: "Fiche réflexe" }] : []).concat(SCHEMA);
+  side.replaceChildren(...items.map(s => h("a", { href: "#s-" + s.id }, h("span", { text: s.title }),
+    s.blocks ? h("span", { class: "count", "data-count": s.id, text: sectionCount(s) }) : null)));
+  mob.replaceChildren(h("option", { value: "", text: "Aller à…" }), ...items.map(s => h("option", { value: s.id, text: s.title })));
+}
+function refreshCounts() {
+  for (const sec of SCHEMA) { const el = document.querySelector(`[data-count="${sec.id}"]`); if (el) el.textContent = sectionCount(sec); }
+}
+
+/* ===================================================================== */
+/* Actions                                                                */
+/* ===================================================================== */
+const $ = id => document.getElementById(id);
+
+function showGate() {
+  $("app").style.display = "none"; $("gate").style.display = "block";
+  const has = !!store.get();
+  $("gate-open").hidden = !has && !pendingImport;
+  $("gate-create").hidden = has || !!pendingImport;
+  (has || pendingImport ? $("pass-open") : $("pass-new")).focus();
+}
+function showApp() {
+  $("gate").style.display = "none"; $("app").style.display = "block";
+  setMode(S.mode); setSaveState("Enregistré (chiffré)");
+}
+function setMode(m) {
+  S.mode = m;
+  $("mode-read").setAttribute("aria-pressed", String(m === "read"));
+  $("mode-edit").setAttribute("aria-pressed", String(m === "edit"));
+  render();
+}
+
+$("btn-create").onclick = async () => {
+  const p1 = $("pass-new").value, p2 = $("pass-new2").value;
+  if (p1.length < 12) return $("err-create").textContent = "Choisissez au moins 12 caractères (idéalement 4 ou 5 mots).";
+  if (p1 !== p2) return $("err-create").textContent = "Les deux phrases ne correspondent pas.";
+  S.salt = crypto.getRandomValues(new Uint8Array(16)); S.iter = ITER;
+  S.key = await deriveKey(p1, S.salt, S.iter);
+  S.data = freshData(); S.mode = "edit";
+  await saveNow(); $("pass-new").value = $("pass-new2").value = "";
+  showApp();
+};
+
+$("btn-open").onclick = async () => {
+  const pkg = pendingImport || store.get();
+  $("err-open").textContent = "Déchiffrement…";
+  try {
+    Object.assign(S, await unseal(pkg, $("pass-open").value));
+    ensureShape(S.data);
+    $("pass-open").value = ""; $("err-open").textContent = "";
+    if (pendingImport) { pendingImport = null; await saveNow(); }
+    S.mode = "read"; showApp();
+  } catch (e) { console.error(e); $("err-open").textContent = "Phrase secrète incorrecte ou fichier abîmé."; }
+};
+$("pass-open").addEventListener("keydown", e => { if (e.key === "Enter") $("btn-open").click(); });
+$("pass-new2").addEventListener("keydown", e => { if (e.key === "Enter") $("btn-create").click(); });
+
+const pickFile = () => $("file-import").click();
+$("btn-import-gate").onclick = $("btn-import-gate2").onclick = pickFile;
+$("btn-import").onclick = async () => {
+  if (confirm("Importer une sauvegarde remplacera le dossier affiché dans ce navigateur. Continuer ?")) { pickFile(); await lock(false); }
+};
+$("file-import").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try {
+    const pkg = JSON.parse(await f.text());
+    if (pkg.format !== "dossier-familial" || !pkg.ct) throw 0;
+    pendingImport = pkg; showGate();
+    $("gate-open").hidden = false; $("gate-create").hidden = true;
+    $("err-open").textContent = `Fichier « ${f.name} » chargé : saisissez sa phrase secrète.`;
+    $("pass-open").focus();
+  } catch { alert("Ce fichier n'est pas une sauvegarde de dossier familial."); }
+};
+
+$("btn-export").onclick = async () => {
+  await saveNow();
+  const blob = new Blob([JSON.stringify(await seal(S.data), null, 1)], { type: "application/json" });
+  const a = h("a", { href: URL.createObjectURL(blob), download: `dossier-familial-${new Date().toISOString().slice(0, 10)}.json` });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+
+$("btn-print").onclick = () => {
+  if (S.mode !== "read") setMode("read");
+  alert("La version imprimée n'est PAS chiffrée : rangez-la dans un endroit sûr (coffre, notaire, adoul).");
+  window.print();
+};
+
+async function lock(reshow = true) {
+  await saveNow();
+  S.key = null; S.data = null; S.salt = null;
+  $("content").replaceChildren(); $("menu").hidden = true;
+  if (reshow) showGate();
+}
+$("btn-lock").onclick = () => lock();
+$("btn-menu").onclick = () => { $("menu").hidden = !$("menu").hidden; };
+$("mode-read").onclick = () => setMode("read");
+$("mode-edit").onclick = () => setMode("edit");
+$("mobile-nav").onchange = e => { if (e.target.value) location.hash = "s-" + e.target.value; e.target.value = ""; };
+
+$("btn-chpass").onclick = async () => {
+  const p1 = prompt("Nouvelle phrase secrète (au moins 12 caractères) :");
+  if (!p1) return;
+  if (p1.length < 12) return alert("Trop courte.");
+  if (prompt("Confirmez la nouvelle phrase secrète :") !== p1) return alert("Les phrases ne correspondent pas : rien n'a été changé.");
+  S.salt = crypto.getRandomValues(new Uint8Array(16)); S.iter = ITER;
+  S.key = await deriveKey(p1, S.salt, S.iter);
+  await saveNow();
+  alert("Phrase secrète changée. Pensez à : 1) mettre à jour l'enveloppe ou la copie chez le notaire, 2) refaire une sauvegarde : les anciennes s'ouvrent encore avec l'ancienne phrase.");
+};
+$("btn-wipe").onclick = () => {
+  if (prompt("Cela efface le dossier de CE navigateur (vos sauvegardes .json ne sont pas touchées). Tapez EFFACER pour confirmer.") === "EFFACER") {
+    S.key = null; store.del(); lock();
+  }
+};
+$("btn-theme").onclick = () => {
+  const cur = document.documentElement.dataset.theme
+    || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const next = cur === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("dossier-familial-theme", next); } catch {}
+};
+try { const t = localStorage.getItem("dossier-familial-theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
+
+window.addEventListener("beforeunload", () => { if (S.key) saveNow(); });
+
+if (!window.crypto || !crypto.subtle) {
+  document.getElementById("gate").innerHTML = '<div class="card notice">Ce navigateur ne permet pas le chiffrement nécessaire. Ouvrez ce fichier avec une version récente de Firefox, Chrome, Edge ou Safari.</div>';
+} else showGate();
+</script>
+</body>
+</html>
